@@ -65,6 +65,10 @@ export interface ParticipantProfile {
   name: string;
   shortName: string;
   category: string;
+  imageSrc?: string;
+  imageScale?: number;
+  imageOffsetXPercent?: number;
+  imageOffsetYPercent?: number;
 }
 
 export interface ParticipantActionState {

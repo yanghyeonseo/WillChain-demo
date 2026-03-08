@@ -177,21 +177,17 @@ function App() {
       : blockPreview;
 
   const baseRows: ActorId[] = [
-    'supreme_court',
-    'nts',
-    'family_court',
-    'ksd',
-    'bank',
-    'insurer',
-    'medical',
-    'executor',
-    'donor',
-    'assignee_2',
+    ...participantProfiles
+      .map((profile) => profile.id)
+      .filter((id) => id !== 'assignee_1'),
     ...(currentStage.activeParticipants.some((row) => row.participantId === 'smart_contract')
       ? (['smart_contract'] as ActorId[])
       : []),
   ];
   const rows = [...baseRows].sort((a, b) => {
+    const participantOrder = new Map(
+      participantProfiles.map((profile, index) => [profile.id, index]),
+    );
     const getPriority = (actor: ActorId): number => {
       const action = currentStage.activeParticipants.find((row) => row.participantId === actor);
       const isIssuer = currentStage.issuedBy === actor || action?.isFocused;
@@ -207,7 +203,9 @@ function App() {
     const pa = getPriority(a);
     const pb = getPriority(b);
     if (pa !== pb) return pa - pb;
-    return actorName[a].localeCompare(actorName[b], 'ko');
+    const ia = participantOrder.get(a as ParticipantId);
+    const ib = participantOrder.get(b as ParticipantId);
+    return (ia ?? Number.MAX_SAFE_INTEGER) - (ib ?? Number.MAX_SAFE_INTEGER);
   });
   const timelineColumns = useMemo(() => {
     const columns: Array<{ real?: StageDefinition; chain?: StageDefinition }> = [];
@@ -445,26 +443,58 @@ function App() {
                 const focused = Boolean(action?.isFocused);
                 const label = profile?.name ?? actorName[actor];
                 const subLabel = profile?.category ?? '시스템';
+                const imageScale = profile?.imageScale && profile.imageScale > 0 ? profile.imageScale : 1;
+                const imageOffsetXPercent = profile?.imageOffsetXPercent ?? 0;
+                const imageOffsetYPercent = profile?.imageOffsetYPercent ?? 0;
 
                 return (
                   <article
                     key={actor}
-                    className={`flex items-center gap-3 rounded-2xl border p-2.5 transition ${
-                      active
-                        ? focused
-                          ? 'border-blue-300 bg-blue-50/70 shadow-md ring-2 ring-blue-200'
-                          : 'border-slate-200 bg-white'
-                        : 'border-slate-100 bg-slate-50 opacity-45 grayscale'
-                    }`}
+                    className={`flex items-center gap-3 px-1 py-2 transition ${active ? '' : 'opacity-45 grayscale'}`}
                   >
-                    <div className="flex min-w-[64px] flex-col items-center">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-gradient-to-br from-blue-50 to-indigo-100 text-xs font-bold text-slate-700">
-                        {initials(label)}
-                      </div>
-                      <p className="mt-1 text-[11px] font-medium text-slate-600">{subLabel}</p>
+                    <div className="flex min-w-[68px] flex-col items-center">
+                      {profile?.imageSrc ? (
+                        <div
+                          className={`h-14 w-14 overflow-hidden rounded-full border transition ${
+                            focused
+                              ? 'border-blue-500 ring-4 ring-blue-200 shadow-md'
+                              : active
+                                ? 'border-slate-300 shadow-sm'
+                                : 'border-slate-200'
+                          }`}
+                        >
+                          <img
+                            src={profile.imageSrc}
+                            alt={`${label} 로고`}
+                            className="block h-full w-full object-contain"
+                            style={{
+                              transform: `translate(${imageOffsetXPercent}%, ${imageOffsetYPercent}%) scale(${imageScale})`,
+                              transformOrigin: '50% 50%',
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          className={`flex h-14 w-14 items-center justify-center rounded-full border bg-gradient-to-br from-blue-50 to-indigo-100 text-sm font-bold text-slate-700 transition ${
+                            focused
+                              ? 'border-blue-500 ring-4 ring-blue-200 shadow-md'
+                              : active
+                                ? 'border-slate-300 shadow-sm'
+                                : 'border-slate-200'
+                          }`}
+                        >
+                          {initials(label)}
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-1 items-center justify-between gap-2">
-                      <p className="text-xs leading-5 text-slate-700">{action?.description ?? '해당 단계 액션 없음'}</p>
+                      <div className="min-w-0">
+                        <p className="text-[15px] font-bold leading-5 text-slate-900">
+                          {label}
+                          <span className="ml-2 text-[12px] font-semibold text-slate-500">{subLabel}</span>
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-slate-700">{action?.description ?? '해당 단계 액션 없음'}</p>
+                      </div>
                       {shouldRenderParticipantButton(actor)
                         ? renderButton(
                             currentStage.id,

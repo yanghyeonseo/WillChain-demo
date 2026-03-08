@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { participantProfiles, stageDefinitions } from './data/willchainDemoScenario';
 import type { ActorId, ParticipantId, StageDefinition, StatusTone } from './types/scenario';
 
@@ -38,6 +38,7 @@ function App() {
   const [currentStageId, setCurrentStageId] = useState<string>(firstStage.id);
   const [approvalState, setApprovalState] = useState<Record<string, ParticipantId[]>>({});
   const [hoveredBlockStageId, setHoveredBlockStageId] = useState<string | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const stageById = useMemo(() => {
     return Object.fromEntries(stageDefinitions.map((stage) => [stage.id, stage]));
@@ -132,32 +133,14 @@ function App() {
     );
   };
 
-  const blockPreview = useMemo(() => {
-    if (!currentStage.blockPreview) return null;
-
-    const preview = currentStage.blockPreview;
-    const required = currentStage.requiredApprovals ?? [];
-    const approved = approvalState[currentStage.id] ?? [];
-
-    const signatureSet = [
-      ...(currentStage.issuedBy ? [`Sig_${String(currentStage.issuedBy)}`] : []),
-      ...required.map((participantId) =>
-        approved.includes(participantId) ? `Sig_${participantId}` : 'Pending',
-      ),
-    ];
-
-    return {
-      ...preview,
-      status: required.every((participantId) => approved.includes(participantId))
-        ? 'Committed'
-        : 'Pending Signatures',
-      signatureSet,
-    };
-  }, [approvalState, currentStage]);
-
   const hoverStage = hoveredBlockStageId ? stageById[hoveredBlockStageId] : null;
+  const isPastHoveredBlock = Boolean(
+    hoverStage &&
+      hoverStage.type === 'block_commit_stage' &&
+      hoverStage.order < currentStage.order,
+  );
   const hoverPreview =
-    hoverStage?.blockPreview && hoverStage.type === 'block_commit_stage'
+    hoverStage?.blockPreview && hoverStage.type === 'block_commit_stage' && isPastHoveredBlock
       ? {
           ...hoverStage.blockPreview,
           status: (hoverStage.requiredApprovals ?? []).every((id) =>
@@ -174,7 +157,16 @@ function App() {
             ),
           ],
         }
-      : blockPreview;
+      : null;
+  const handleBlockHoverMove = (stageId: string, event: ReactMouseEvent) => {
+    const stage = stageById[stageId];
+    if (!stage || stage.type !== 'block_commit_stage' || stage.order >= currentStage.order) {
+      setHoveredBlockStageId(null);
+      return;
+    }
+    setHoveredBlockStageId(stageId);
+    setHoverPosition({ x: event.clientX, y: event.clientY });
+  };
 
   const baseRows: ActorId[] = [
     ...participantProfiles
@@ -383,7 +375,10 @@ function App() {
                           <button
                             type="button"
                             onMouseEnter={() => {
-                              if (stage) setHoveredBlockStageId(stage.id);
+                              if (stage && stage.order < currentStage.order) setHoveredBlockStageId(stage.id);
+                            }}
+                            onMouseMove={(event) => {
+                              if (stage) handleBlockHoverMove(stage.id, event);
                             }}
                             onMouseLeave={() => setHoveredBlockStageId(null)}
                             onClick={() => {
@@ -411,8 +406,20 @@ function App() {
                     <button
                       key={`chain-label-${idx}`}
                       type="button"
-                      onMouseEnter={() => {
-                        if (column.chain) setHoveredBlockStageId(column.chain.id);
+                      onMouseEnter={(event) => {
+                        if (column.chain) {
+                          if (column.chain.order < currentStage.order) {
+                            setHoveredBlockStageId(column.chain.id);
+                            setHoverPosition({ x: event.clientX, y: event.clientY });
+                          } else {
+                            setHoveredBlockStageId(null);
+                          }
+                        }
+                      }}
+                      onMouseMove={(event) => {
+                        if (column.chain) {
+                          handleBlockHoverMove(column.chain.id, event);
+                        }
                       }}
                       onMouseLeave={() => setHoveredBlockStageId(null)}
                       onClick={() => {
@@ -545,42 +552,6 @@ function App() {
               ))}
             </div>
 
-            {hoverPreview ? (
-              <div className="mt-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-3 text-xs text-slate-800">
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="font-semibold">{hoverPreview.title}</h3>
-                  <span
-                    className={`rounded-full px-2 py-0.5 font-semibold ${
-                      hoverPreview.status === 'Committed'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-amber-100 text-amber-700'
-                    }`}
-                  >
-                    {hoverPreview.status}
-                  </span>
-                </div>
-                <div className="grid gap-1 text-[11px] leading-5 sm:grid-cols-2">
-                  <p><strong>Prev_Block_Hash:</strong> {hoverPreview.prevBlockHash}</p>
-                  <p><strong>Block_Hash:</strong> {hoverPreview.blockHash}</p>
-                  <p><strong>Event_ID:</strong> {hoverPreview.eventId}</p>
-                  <p><strong>Event_Timestamp:</strong> {hoverPreview.eventTimestamp}</p>
-                  <p><strong>Event_Type:</strong> {hoverPreview.eventType}</p>
-                  <p><strong>Event_Data_Hash:</strong> {hoverPreview.eventDataHash}</p>
-                  <p><strong>Related_Will_ID:</strong> {hoverPreview.relatedWillId ?? '-'}</p>
-                  <p><strong>RWA_Tokens_ID:</strong> {hoverPreview.rwaTokensId?.join(', ') ?? '-'}</p>
-                  <p><strong>OffChain_Reference:</strong> {hoverPreview.offChainReference ?? '-'}</p>
-                  <p><strong>Approving_Parties:</strong> {hoverPreview.approvingParties.join(', ')}</p>
-                  <p className="sm:col-span-2"><strong>Signature_Set:</strong> {hoverPreview.signatureSet.join(', ')}</p>
-                  <p className="sm:col-span-2"><strong>요약:</strong> {hoverPreview.summary ?? '-'}</p>
-                  <p><strong>발행 주체:</strong> {hoverPreview.issuer ?? '-'}</p>
-                  <p>
-                    <strong>최종 승인 수:</strong>{' '}
-                    {(hoverPreview.signatureSet.filter((sig) => sig !== 'Pending').length - 1) /
-                      (currentStage.requiredApprovals?.length ?? 0)}
-                  </p>
-                </div>
-              </div>
-            ) : null}
           </section>
 
           <section className="rounded-3xl border border-white/70 bg-white/85 p-4 shadow-xl backdrop-blur">
@@ -762,6 +733,37 @@ function App() {
           </div>
         </footer>
       </div>
+      {hoverPreview ? (
+        <div
+          className="pointer-events-none fixed z-50 w-[460px] max-w-[min(460px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-indigo-200 bg-indigo-50/95 p-3 text-xs text-slate-800 shadow-xl backdrop-blur-sm font-mono"
+          style={{
+            left: Math.max(8, Math.min(hoverPosition.x + 16, window.innerWidth - 472)),
+            top: Math.max(8, Math.min(hoverPosition.y + 16, window.innerHeight - 320)),
+          }}
+        >
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-sm font-bold">{hoverPreview.title}</h3>
+          </div>
+          <div className="grid gap-1 text-[11px] leading-5">
+            <p className="break-all"><strong>Prev_Block_Hash:</strong> {hoverPreview.prevBlockHash}</p>
+            <p className="break-all"><strong>Block_Hash:</strong> {hoverPreview.blockHash}</p>
+            <p className="break-all"><strong>Event_ID:</strong> {hoverPreview.eventId}</p>
+            <p className="break-all"><strong>Event_Timestamp:</strong> {hoverPreview.eventTimestamp}</p>
+            <p className="break-all"><strong>Event_Type:</strong> {hoverPreview.eventType}</p>
+            <p className="break-all"><strong>Event_Data_Hash:</strong> {hoverPreview.eventDataHash}</p>
+            <p className="break-all"><strong>Related_Will_ID:</strong> {hoverPreview.relatedWillId ?? '-'}</p>
+            <p className="break-all"><strong>RWA_Tokens_ID:</strong> {hoverPreview.rwaTokensId?.join(', ') ?? '-'}</p>
+            <p className="break-all"><strong>OffChain_Reference:</strong> {hoverPreview.offChainReference ?? '-'}</p>
+            <p className="break-words"><strong>Approving_Parties:</strong> {hoverPreview.approvingParties.join(', ')}</p>
+            <p className="break-words"><strong>Signature_Set:</strong> {hoverPreview.signatureSet.join(', ')}</p>
+          </div>
+          <div className="mt-2 rounded-xl border border-indigo-200 bg-white/80 p-2 font-sans">
+            <p className="break-words text-center text-sm leading-6 text-slate-800">
+              {hoverPreview.summary ?? '-'} [{hoverPreview.issuer ?? '-'} 발행]
+            </p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

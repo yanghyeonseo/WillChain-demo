@@ -60,6 +60,13 @@ function App() {
 
   const transitionTo = (stageId?: string) => {
     if (!stageId) return;
+    const targetStage = stageById[stageId];
+    if (targetStage?.type === 'block_commit_stage') {
+      setApprovalState((prev) => ({
+        ...prev,
+        [stageId]: [],
+      }));
+    }
     setCurrentStageId(stageId);
   };
 
@@ -249,10 +256,20 @@ function App() {
     }
     return true;
   };
-  const assigneeOneAction = currentStage.activeParticipants.find(
-    (row) => row.participantId === 'assignee_1',
-  );
-
+  const mergedActivityLogs = useMemo(() => {
+    const completedLogs = [...currentStage.userLogCards].reverse();
+    const currentLog = {
+      id: `current-${currentStage.id}`,
+      title: currentStage.shortTitle,
+      description: currentStage.description,
+      date: currentStage.date,
+      status: 'in_progress' as const,
+    };
+    const dedupedCompleted = completedLogs.filter(
+      (log) => !(log.title === currentLog.title && log.date === currentLog.date),
+    );
+    return [currentLog, ...dedupedCompleted];
+  }, [currentStage]);
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_15%_15%,#dbeafe_0,#f8fafc_42%,#f1f5f9_100%)] px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-4">
@@ -518,13 +535,10 @@ function App() {
           </section>
 
           <section className="rounded-3xl border border-white/70 bg-white/85 p-4 shadow-xl backdrop-blur">
-            <div className="mb-3 flex items-end justify-between">
+            <div className="mb-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">World State</p>
                 <h2 className="text-lg font-semibold">현실 세계 상태 패널</h2>
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">
-                {currentStage.longTitle}
               </div>
             </div>
 
@@ -560,20 +574,8 @@ function App() {
               <h2 className="text-lg font-semibold">사용자 안내 UI</h2>
             </div>
 
-            <div className="rounded-[2rem] border-8 border-slate-900 bg-slate-950 p-2 shadow-2xl">
-              <div className="max-h-[670px] overflow-y-auto rounded-[1.4rem] bg-slate-50 p-3">
-                <header className="mb-3 rounded-2xl border border-slate-200 bg-white p-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">진행 현황</p>
-                  <h3 className="text-sm font-semibold text-slate-900">{currentStage.shortTitle}</h3>
-                  <p className="mt-1 text-xs leading-5 text-slate-600">{currentStage.description}</p>
-                  <div className="mt-2 flex gap-2 text-[11px]">
-                    <span className="rounded-full bg-blue-100 px-2 py-0.5 font-medium text-blue-700">{currentStage.date}</span>
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-600">
-                      {currentStage.type === 'real_event_stage' ? '현실 이벤트' : '온체인 블록'}
-                    </span>
-                  </div>
-                </header>
-
+            <div className="w-full aspect-[9/17] rounded-[2rem] border-8 border-slate-900 bg-slate-950 p-2 shadow-2xl">
+              <div className="h-full overflow-y-auto rounded-[1.4rem] bg-slate-50 p-3">
                 {currentStage.userModal?.visible ? (
                   <section className="mb-3 rounded-2xl border border-blue-200 bg-blue-50 p-3">
                     <p className="text-xs font-semibold text-blue-700">현재 액션</p>
@@ -609,14 +611,50 @@ function App() {
                 ) : null}
 
                 {currentStage.type === 'block_commit_stage' ? (
-                  <section className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 p-3">
-                    <p className="text-xs font-semibold text-amber-800">승인 진행 상태</p>
-                    <p className="mt-1 text-xs text-amber-900">
-                      {currentApprovals.length} / {(currentStage.requiredApprovals ?? []).length} 승인 완료
-                    </p>
-                    <div className="mt-2 h-2 rounded-full bg-amber-100">
+                  <section
+                    className={`mb-3 rounded-2xl border p-3 ${
+                      isCommitted
+                        ? 'border-emerald-200 bg-gradient-to-b from-emerald-50 to-white'
+                        : 'border-amber-200 bg-gradient-to-b from-amber-50 to-white'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p
+                          className={`text-xs font-semibold uppercase tracking-[0.14em] ${
+                            isCommitted ? 'text-emerald-700' : 'text-amber-700'
+                          }`}
+                        >
+                          승인 진행 현황
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                          {currentApprovals.length} / {(currentStage.requiredApprovals ?? []).length} 승인 완료
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                          isCommitted
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-amber-100 text-amber-700'
+                        }`}
+                      >
+                        {Math.round(
+                          (currentApprovals.length /
+                            Math.max((currentStage.requiredApprovals ?? []).length, 1)) *
+                            100,
+                        )}
+                        %
+                      </span>
+                    </div>
+                    <div
+                      className={`mt-3 h-2.5 rounded-full ${
+                        isCommitted ? 'bg-emerald-100' : 'bg-amber-100'
+                      }`}
+                    >
                       <div
-                        className="h-full rounded-full bg-amber-500 transition-all"
+                        className={`h-full rounded-full transition-all ${
+                          isCommitted ? 'bg-emerald-500' : 'bg-amber-500'
+                        }`}
                         style={{
                           width: `${
                             (currentApprovals.length /
@@ -626,75 +664,123 @@ function App() {
                         }}
                       />
                     </div>
-                  </section>
-                ) : null}
-
-                {assigneeOneAction ? (
-                  <section className="mb-3 rounded-2xl border border-sky-200 bg-sky-50 p-3">
-                    <p className="text-xs font-semibold text-sky-700">양수인 본인 상태</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-700">{assigneeOneAction.description}</p>
-                  </section>
-                ) : null}
-
-                {userSideApprovers.length > 0 ? (
-                  <section className="mb-3 rounded-2xl border border-blue-200 bg-white p-3 shadow-sm">
-                    <p className="text-xs font-semibold text-blue-700">당사자 승인 팝업</p>
-                    <div className="mt-2 space-y-2">
-                      {userSideApprovers.map((participantId) => {
-                        const action = currentStage.activeParticipants.find(
-                          (row) => row.participantId === participantId,
-                        );
-                        const approved = currentApprovals.includes(participantId);
-                        return (
-                          <div
-                            key={`user-approve-${participantId}`}
-                            className="rounded-xl border border-slate-200 bg-slate-50 p-2"
-                          >
-                            <p className="text-[11px] font-semibold text-slate-800">
-                              {actorName[participantId]}
-                            </p>
-                            <p className="mt-1 text-[11px] leading-5 text-slate-600">
-                              {action?.description ?? '승인 요청이 도착했습니다.'}
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => handleApprove(participantId)}
-                              disabled={approved}
-                              className={`mt-2 rounded-xl px-3 py-1.5 text-xs font-semibold ${
-                                approved
-                                  ? 'cursor-not-allowed border border-emerald-200 bg-emerald-100 text-emerald-700'
-                                  : 'border border-blue-300 bg-blue-600 text-white hover:bg-blue-700'
-                              }`}
+                    {userSideApprovers.length > 0 ? (
+                      <div className="mt-3 space-y-2">
+                        {userSideApprovers.map((participantId) => {
+                          const action = currentStage.activeParticipants.find(
+                            (row) => row.participantId === participantId,
+                          );
+                          const approved = currentApprovals.includes(participantId);
+                          return (
+                            <div
+                              key={`user-approve-${participantId}`}
+                              className="rounded-xl border border-slate-200 bg-white/95 p-2.5 shadow-sm"
                             >
-                              {approved ? '승인됨' : '승인'}
-                            </button>
-                          </div>
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <p className="text-[11px] font-semibold text-slate-800">
+                                    {actorName[participantId]}
+                                  </p>
+                                  <p className="mt-1 text-[11px] leading-5 text-slate-600">
+                                    {action?.description ?? '승인 요청이 도착했습니다.'}
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleApprove(participantId)}
+                                  disabled={approved}
+                                  className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold ${
+                                    approved
+                                      ? 'cursor-not-allowed border border-emerald-200 bg-emerald-100 text-emerald-700'
+                                      : 'border border-blue-300 bg-blue-600 text-white hover:bg-blue-700'
+                                  }`}
+                                >
+                                  {approved ? '승인됨' : '승인'}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                    {isCommitted ? (
+                      <div className="mt-3 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => transitionTo(currentStage.nextStageId)}
+                          className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                        >
+                          확인
+                        </button>
+                      </div>
+                    ) : null}
+                  </section>
+                ) : null}
+
+                <section className="mx-auto w-full max-w-[94%]">
+                  <div className="mb-2">
+                    <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">활동 로그</h4>
+                  </div>
+                  {mergedActivityLogs.length === 0 ? (
+                    <p className="text-xs text-slate-500">누적 로그가 아직 없습니다.</p>
+                  ) : (
+                    <ol className="space-y-2">
+                      {mergedActivityLogs.map((log, index) => {
+                        const inProgress = log.status === 'in_progress';
+                        const inProgressTone =
+                          currentStage.type === 'real_event_stage'
+                            ? 'blue'
+                            : isCommitted
+                              ? 'emerald'
+                              : 'amber';
+                        const markerClass = inProgress
+                          ? inProgressTone === 'blue'
+                            ? 'border-blue-500 bg-blue-600 ring-2 ring-blue-200'
+                            : inProgressTone === 'amber'
+                              ? 'border-amber-500 bg-amber-500 ring-2 ring-amber-200'
+                              : 'border-emerald-500 bg-emerald-500 ring-2 ring-emerald-200'
+                          : 'border-emerald-500 bg-emerald-500';
+                        const cardClass = inProgress
+                          ? inProgressTone === 'blue'
+                            ? 'border-blue-200 bg-blue-50/70'
+                            : inProgressTone === 'amber'
+                              ? 'border-amber-200 bg-amber-50/70'
+                              : 'border-emerald-200 bg-emerald-50/70'
+                          : 'border-slate-200 bg-slate-50';
+                        const badgeClass = inProgress
+                          ? inProgressTone === 'blue'
+                            ? 'bg-blue-100 text-blue-700'
+                            : inProgressTone === 'amber'
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-emerald-100 text-emerald-700'
+                          : 'bg-emerald-100 text-emerald-700';
+                        return (
+                          <li key={log.id} className="relative pl-6">
+                            {index < mergedActivityLogs.length - 1 ? (
+                              <span className="absolute left-[10px] top-5 h-[calc(100%-12px)] w-px bg-slate-200" />
+                            ) : null}
+                            <span
+                              className={`absolute left-0 top-1.5 h-5 w-5 rounded-full border-2 ${markerClass}`}
+                            />
+                            <article
+                              className={`rounded-xl border p-2.5 ${cardClass}`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-xs font-semibold text-slate-900">{log.title}</p>
+                                  <p className="text-[10px] font-medium text-slate-500">{log.date}</p>
+                                </div>
+                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeClass}`}>
+                                  {inProgress ? '진행 중' : '완료'}
+                                </span>
+                              </div>
+                              <p className="mt-1 text-[11px] leading-5 text-slate-600">{log.description}</p>
+                            </article>
+                          </li>
                         );
                       })}
-                    </div>
-                  </section>
-                ) : null}
-
-                <section className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">활동 로그</h4>
-                  <div className="mt-2 space-y-2">
-                    {currentStage.userLogCards.length === 0 ? (
-                      <p className="text-xs text-slate-500">누적 로그가 아직 없습니다.</p>
-                    ) : (
-                      currentStage.userLogCards.map((log) => (
-                        <article key={log.id} className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold text-slate-900">{log.title}</p>
-                            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                              완료
-                            </span>
-                          </div>
-                          <p className="mt-1 text-[11px] leading-5 text-slate-600">{log.description}</p>
-                          <p className="mt-1 text-[10px] font-medium text-slate-500">{log.date}</p>
-                        </article>
-                      ))
-                    )}
-                  </div>
+                    </ol>
+                  )}
                 </section>
               </div>
             </div>

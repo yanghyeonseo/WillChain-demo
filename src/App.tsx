@@ -62,6 +62,8 @@ function App() {
   const [approvalState, setApprovalState] = useState<Record<string, ParticipantId[]>>({});
   const [hoveredBlockStageId, setHoveredBlockStageId] = useState<string | null>(null);
   const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [showIntroModal, setShowIntroModal] = useState<boolean>(true);
+  const [showScenarioEndModal, setShowScenarioEndModal] = useState<boolean>(false);
   const participantItemRefs = useRef<Partial<Record<ActorId, HTMLElement | null>>>({});
   const participantPrevTopRef = useRef<Map<ActorId, number>>(new Map());
 
@@ -94,6 +96,19 @@ function App() {
     }
     setCurrentStageId(stageId);
   };
+  const resetToFirstStage = () => {
+    setShowScenarioEndModal(false);
+    setApprovalState({});
+    setHoveredBlockStageId(null);
+    setCurrentStageId(firstStage.id);
+  };
+  const handleNextStage = () => {
+    if (currentStage.id === lastStage.id) {
+      setShowScenarioEndModal(true);
+      return;
+    }
+    transitionTo(currentStage.nextStageId);
+  };
 
   const handleApprove = (participantId: ParticipantId) => {
     if (currentStage.type !== 'block_commit_stage') return;
@@ -110,12 +125,16 @@ function App() {
   };
 
   const handleModalConfirm = () => {
+    if (currentStage.id === lastStage.id) {
+      setShowScenarioEndModal(true);
+      return;
+    }
     if (currentStage.type === 'real_event_stage') {
-      transitionTo(currentStage.nextStageId);
+      handleNextStage();
       return;
     }
     if (currentStage.type === 'block_commit_stage' && isCommitted) {
-      transitionTo(currentStage.nextStageId);
+      handleNextStage();
     }
   };
 
@@ -886,7 +905,7 @@ function App() {
                       <div className="mt-3 flex justify-end">
                         <button
                           type="button"
-                          onClick={() => transitionTo(currentStage.nextStageId)}
+                          onClick={handleNextStage}
                           className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
                         >
                           확인
@@ -995,10 +1014,10 @@ function App() {
           </button>
           <button
             type="button"
-            onClick={() => transitionTo(currentStage.nextStageId)}
-            disabled={currentStage.id === lastStage.id}
+            onClick={handleNextStage}
+            disabled={!currentStage.nextStageId && currentStage.id !== lastStage.id}
             className={`rounded-2xl border px-5 py-2.5 text-sm font-semibold backdrop-blur-2xl backdrop-saturate-150 ring-1 transition shadow-[0_28px_56px_rgba(15,23,42,0.34),0_10px_22px_rgba(15,23,42,0.24)] ${
-              currentStage.id === lastStage.id
+              !currentStage.nextStageId && currentStage.id !== lastStage.id
                 ? 'cursor-not-allowed border-white/45 bg-white/25 text-slate-400 ring-white/35'
                 : 'border-black bg-black text-white ring-black/10 hover:bg-black/90'
             }`}
@@ -1007,6 +1026,58 @@ function App() {
           </button>
         </div>
       </div>
+      {showIntroModal ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/72 px-4 backdrop-blur-md">
+          <div className="w-full max-w-[760px] overflow-hidden rounded-3xl border border-white/30 bg-white/95 shadow-[0_35px_90px_rgba(15,23,42,0.45)]">
+            <div className="px-6 py-7 text-center">
+              <img src={willChainLogo} alt="WillChain 로고" className="mx-auto mb-4 h-28 w-28 object-contain" />
+              <h3 className="text-2xl font-extrabold tracking-tight text-slate-900">안녕하세요, WillChain 시연 웹페이지입니다.</h3>
+              <p className="mx-auto mt-4 max-w-[640px] text-sm leading-6 text-slate-700">
+                본 웹페이지는 한화생명 미래금융인재 공모전을 위한 시연용 페이지이며, 실제 서비스가 아닙니다.
+                <br />
+                페이지에 나타나는 기관 및 기업은 이해를 돕기 위해 임의로 선정되었고, 제작자와 직접적인 연관이 없습니다.
+              </p>
+              <p className="mt-3 text-sm font-semibold text-slate-900">Team 경통통</p>
+            </div>
+            <div className="border-t border-slate-200/80 bg-slate-50/80 px-6 py-4 text-center">
+              <button
+                type="button"
+                onClick={() => setShowIntroModal(false)}
+                className="rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+              >
+                시작하기
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {showScenarioEndModal ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/72 px-4 backdrop-blur-md">
+          <div className="w-full max-w-[560px] overflow-hidden rounded-3xl border border-white/30 bg-white/95 shadow-[0_35px_90px_rgba(15,23,42,0.45)]">
+            <div className="px-6 py-7 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-xl text-emerald-700">
+                ✓
+              </div>
+              <h3 className="text-2xl font-extrabold tracking-tight text-slate-900">WillChain을 사용해주셔서 감사합니다!</h3>
+              <p className="mt-4 text-sm leading-6 text-slate-700">
+                시연이 종료되었습니다.
+                <br />
+                저희가 준비한 시나리오는 여기까지입니다. 감사합니다.
+              </p>
+              <p className="mt-3 text-sm font-semibold text-slate-900">Team 경통통</p>
+            </div>
+            <div className="border-t border-slate-200/80 bg-slate-50/80 px-6 py-4 text-center">
+              <button
+                type="button"
+                onClick={resetToFirstStage}
+                className="rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+              >
+                처음으로 돌아가기
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {hoverPreview ? (
         <div
           className="pointer-events-none fixed z-50 w-[460px] max-w-[min(460px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-indigo-200 bg-indigo-50/95 p-3 text-xs text-slate-800 shadow-xl backdrop-blur-sm font-mono"

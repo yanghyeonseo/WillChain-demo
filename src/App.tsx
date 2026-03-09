@@ -1076,6 +1076,8 @@ function App() {
               >
                 처음으로 돌아가기
               </button>
+              <p className="mt-3 text-xs tracking-tight text-slate-900">제작 | 양현서</p>
+              <a className="mt-3 text-xs tracking-tight text-slate-900" href="https://github.com/yanghyeonseo/WiilChain-demo">Github | https://github.com/yanghyeonseo/WiilChain-demo </a>
             </div>
           </div>
         </div>

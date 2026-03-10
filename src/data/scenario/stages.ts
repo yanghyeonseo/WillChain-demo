@@ -573,7 +573,7 @@ const stageList: StageDefinition[] = [
     userLogCards: logsUntil(13),
     userModal: {
       visible: true,
-      title: '사망 사실이 확인되었습니다.',
+      title: '삼가 고인의 명복을 빕니다. 양도인의 사망 사실이 확인되었습니다.',
       body: '의료기관의 사망진단 및 법적 등록 확인 후, 사후 절차를 위한 다음 단계로 이동할 수 있습니다.',
       confirmLabel: '확인',
       actionType: 'confirm_death_notice',

@@ -403,7 +403,7 @@ function App() {
     <div className="min-h-screen bg-[radial-gradient(circle_at_15%_15%,#dbeafe_0,#f8fafc_42%,#f1f5f9_100%)] px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-4">
         <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">WillChain Scenario Timeline</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em]">WillChain Scenario Timeline</p>
 
           <div className="overflow-x-auto pb-1">
             <div className="min-w-[980px] space-y-0">
@@ -598,7 +598,7 @@ function App() {
         <main className="grid items-start gap-4 xl:grid-cols-[minmax(320px,1fr)_minmax(380px,460px)_minmax(320px,1fr)]">
           <section className="h-full rounded-3xl border border-white/70 bg-white/85 p-4 shadow-xl backdrop-blur xl:order-1 xl:self-stretch">
             <div className="mb-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700">Participants</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Participants</p>
               <h2 className="text-lg font-semibold">네트워크 참여 주체</h2>
             </div>
             <div className="space-y-2">
@@ -734,9 +734,9 @@ function App() {
 
           <section className="flex flex-col items-center xl:order-2">
             <div className="mb-3 text-center">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">User Device</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700">User Device</p>
               <h2 className="text-lg font-semibold">
-                <span className="font-extrabold text-slate-900 underline decoration-blue-300 underline-offset-4">
+                <span className="font-extrabold text-slate-900 underline decoration-indigo-700 underline-offset-4">
                   {userUiActorLabel}
                 </span>
                 <span className="ml-1">안내 UI</span>
@@ -1077,7 +1077,7 @@ function App() {
                 처음으로 돌아가기
               </button>
               <p className="mt-3 text-xs tracking-tight text-slate-900">제작 | 양현서</p>
-              <a className="mt-3 text-xs tracking-tight text-slate-900" href="https://github.com/yanghyeonseo/WiilChain-demo">Github | https://github.com/yanghyeonseo/WiilChain-demo </a>
+              <a className="mt-3 text-xs tracking-tight text-slate-900" href="https://github.com/yanghyeonseo/WillChain-demo">Github | https://github.com/yanghyeonseo/WiilChain-demo </a>
             </div>
           </div>
         </div>

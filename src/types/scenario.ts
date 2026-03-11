@@ -134,6 +134,7 @@ export interface StageDefinition {
   type: StageType;
   timelineLane: TimelineLane;
   timelineLabel: string;
+  timelineAnchorRealStageId?: string;
   date: string;
   shortTitle: string;
   longTitle: string;

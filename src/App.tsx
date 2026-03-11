@@ -252,24 +252,28 @@ function App() {
   });
   const timelineColumns = useMemo(() => {
     const columns: Array<{ real?: StageDefinition; chain?: StageDefinition }> = [];
-    let colIndex = 0;
-    let prevLane: 'real' | 'chain' | null = null;
+    const realColumnByStageId = new Map<string, number>();
+    let mostRecentRealStageId: string | undefined;
 
     for (const stage of stageDefinitions) {
       if (stage.timelineLane === 'real') {
-        colIndex += 1;
-        columns[colIndex - 1] = columns[colIndex - 1] ?? {};
-        columns[colIndex - 1].real = stage;
-        prevLane = 'real';
+        const realColumnIndex = columns.length;
+        columns[realColumnIndex] = columns[realColumnIndex] ?? {};
+        columns[realColumnIndex].real = stage;
+        realColumnByStageId.set(stage.id, realColumnIndex);
+        mostRecentRealStageId = stage.id;
       } else {
-        if (prevLane === 'chain') {
-          colIndex += 1;
-        } else if (colIndex === 0) {
-          colIndex = 1;
+        const anchorRealStageId = stage.timelineAnchorRealStageId ?? mostRecentRealStageId;
+        let columnIndex =
+          (anchorRealStageId ? realColumnByStageId.get(anchorRealStageId) : undefined) ?? -1;
+        if (columnIndex < 0) {
+          columnIndex = Math.max(columns.length - 1, 0);
         }
-        columns[colIndex - 1] = columns[colIndex - 1] ?? {};
-        columns[colIndex - 1].chain = stage;
-        prevLane = 'chain';
+        while (columns[columnIndex]?.chain) {
+          columnIndex += 1;
+        }
+        columns[columnIndex] = columns[columnIndex] ?? {};
+        columns[columnIndex].chain = stage;
       }
     }
 
@@ -420,7 +424,7 @@ function App() {
                       onClick={() => {
                         if (column.real) transitionTo(column.real.id);
                       }}
-                      className="min-h-8 px-1 text-center text-[11px] leading-4 text-slate-700"
+                      className="min-h-8 whitespace-pre-line px-1 text-center text-[11px] leading-4 text-slate-700"
                     >
                       {column.real ? timelineLabel(column.real) : ''}
                     </button>
@@ -584,7 +588,7 @@ function App() {
                       onClick={() => {
                         if (column.chain) transitionTo(column.chain.id);
                       }}
-                      className="min-h-8 px-1 text-center text-[11px] leading-4 text-slate-700"
+                      className="min-h-8 whitespace-pre-line px-1 text-center text-[11px] leading-4 text-slate-700"
                     >
                       {column.chain ? timelineLabel(column.chain) : ''}
                     </button>
@@ -705,8 +709,8 @@ function App() {
                         isLeftCol ? 'sm:border-r sm:border-slate-200' : ''
                       } ${!isLastRow ? 'border-b border-slate-200' : ''}`}
                     >
-                      <div className="mb-1 flex items-center justify-between">
-                        <h3 className="text-sm font-semibold">{asset.title}</h3>
+                      <div className="-mx-3 -mt-3 mb-2 flex h-12 items-center justify-between border-b border-slate-200 bg-slate-50/85 px-3">
+                        <h3 className="whitespace-pre-line text-sm font-semibold leading-4">{asset.title}</h3>
                         <span
                           className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                             statusTagClasses[asset.tone]
@@ -720,9 +724,21 @@ function App() {
                           {asset.statusText}
                         </span>
                       </div>
-                      <div className="mt-2 flex h-[84px] flex-col justify-start gap-1">
-                        {asset.valueLabel ? <p className="text-base font-semibold text-slate-900">{asset.valueLabel}</p> : null}
-                        {asset.helperText ? <p className="line-clamp-3 text-xs leading-5 text-slate-600">{asset.helperText}</p> : null}
+                      <div className="mt-2 flex h-[84px] flex-col gap-1">
+                        {asset.valueLabel ? (
+                          <p
+                            className={`whitespace-pre-line text-sm font-bold text-slate-900 ${
+                              asset.assetId === 'smart_contract'
+                                ? 'whitespace-pre-wrap font-mono text-[11px] leading-[0.92rem]'
+                                : asset.assetId === 'will_document'
+                                  ? 'whitespace-pre-wrap text-[11px] leading-[0.92rem]'
+                                  : ''
+                            }`}
+                          >
+                            {asset.valueLabel}
+                          </p>
+                        ) : null}
+                        {asset.helperText ? <p className="mt-auto line-clamp-3 text-right text-xs leading-5 text-slate-600">{asset.helperText}</p> : null}
                       </div>
                     </article>
                   );

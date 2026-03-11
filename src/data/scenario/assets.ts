@@ -5,9 +5,9 @@ const assetTitles: Record<AssetCardId, string> = {
   asset_registry: '자산 등록부',
   smart_contract: '스마트 컨트랙트',
   rwa_tokens: '실물자산토큰',
-  donor_account: '양도인 계좌',
-  assignee_1_account: '양수인 본인 계좌',
-  assignee_2_account: '타 양수인 계좌',
+  donor_account: '양도인\n계좌 및 토큰 지갑',
+  assignee_1_account: '양수인 본인\n계좌 및 토큰 지갑',
+  assignee_2_account: '타 양수인\n계좌 및 토큰 지갑',
   insurance_payout: '보험금 상태',
   post_process_status: '사후 절차 상태',
 };
@@ -18,28 +18,28 @@ const baseAssets: AssetState[] = [
     title: assetTitles.will_document,
     statusText: '미등록',
     tone: 'gray',
-    helperText: '작성/등록 전 상태입니다.',
+    helperText: '작성 전',
   },
   {
     assetId: 'asset_registry',
     title: assetTitles.asset_registry,
     statusText: '미등록',
     tone: 'gray',
-    helperText: '부동산, 자동차, 예금 정보가 아직 입력되지 않았습니다.',
+    helperText: '자산 미등록',
   },
   {
     assetId: 'smart_contract',
     title: assetTitles.smart_contract,
     statusText: '미설정',
     tone: 'gray',
-    helperText: '자동 집행 규칙이 아직 없습니다.',
+    helperText: '규칙 미설정',
   },
   {
     assetId: 'rwa_tokens',
     title: assetTitles.rwa_tokens,
     statusText: '미발행',
     tone: 'gray',
-    helperText: '토큰화가 시작되지 않았습니다.',
+    helperText: '토큰 미발행',
   },
   {
     assetId: 'donor_account',
@@ -67,7 +67,7 @@ const baseAssets: AssetState[] = [
     title: assetTitles.insurance_payout,
     statusText: '지급 전',
     tone: 'gray',
-    helperText: '사망 확인 후 지급 심사가 시작됩니다.',
+    helperText: '사망 확인 후 심사',
     valueLabel: '₩300,000,000',
   },
   {
@@ -75,7 +75,7 @@ const baseAssets: AssetState[] = [
     title: assetTitles.post_process_status,
     statusText: '생전 단계',
     tone: 'blue',
-    helperText: '사후 절차는 아직 시작되지 않았습니다.',
+    helperText: '절차 미개시',
   },
 ];
 

@@ -1,73 +1,88 @@
-# React + TypeScript + Vite
+# WillChain Demo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+WillChain Demo는 유언 작성부터 자산 등록, 생전 증여, 사망 이후 유언 열람, 보험금 지급, 상속 집행까지의 과정을 한 화면에서 이해할 수 있도록 만든 시연용 웹페이지입니다. 복잡한 법률·금융 절차를 실제 서비스 화면처럼 보여주기보다, "누가 어떤 순서로 무엇을 하고, 그 결과가 어떻게 기록되는지"를 직관적으로 설명하는 데 목적이 있습니다.
 
-Currently, two official plugins are available:
+## 화면은 구성
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+웹페이지는 크게 네 영역으로 나뉩니다.
 
-## React Compiler
+### 상단 타임라인
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+가장 위에는 전체 시나리오 흐름이 시간순으로 배치되어 있습니다.
 
-## Expanding the ESLint configuration
+- `현실 사건`: 실제로 일어나는 절차
+- `블록체인`: 그 사건이 기록되는 실제 온체인 블록들
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+각 점이나 라벨을 누르면 원하는 시점으로 이동할 수 있습니다.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 왼쪽: 네트워크 참여 주체
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+이 영역에서는 현재 단계에 누가 관여하는지 보여줍니다.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- 한화생명
+- 양도인
+- 양수인 본인
+- 타 양수인
+- 유언집행자
+- 대법원
+- 국세청
+- KB국민은행
+- 아산병원
+- 예탁결제원
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+현재 단계와 관련이 깊은 기관은 강조되고, 관련 없는 주체는 흐리게 보여서 누가 핵심인지 바로 파악할 수 있습니다.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 가운데: 현실 세계 상태 패널
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+이 영역은 "지금 실제로 어떤 상태인가"를 보여줍니다.
+
+- 유언장 상태
+- 자산 등록 상태
+- 스마트 컨트랙트 상태
+- 실물자산토큰 상태
+- 양도인 계좌 및 지갑
+- 양수인들의 계좌 및 지갑
+- 보험금 상태
+- 사후 절차 상태
+
+단계가 바뀔 때마다 이 카드들의 상태도 함께 바뀌므로, 단순히 설명을 읽는 것이 아니라 결과 변화를 눈으로 확인할 수 있습니다.
+
+### 오른쪽: 사용자 안내 화면
+
+오른쪽은 사용자가 실제로 안내를 받는 모바일 화면처럼 구성되어 있습니다.
+
+- 지금 해야 할 일
+- 확인 또는 실행 버튼
+- 승인 진행 현황
+- 지금까지의 활동 로그
+
+초반에는 양도인의 화면처럼 보이고, 사후 절차로 넘어가면 양수인 본인의 화면처럼 바뀌어 보여줍니다.
+
+## 어떤 순서로 진행되나요?
+
+전체 흐름은 다음과 같습니다.
+
+1. WillChain 가입
+2. 유언 작성
+3. 자산 등록
+4. 스마트 컨트랙트 작성
+5. 유언 등록 기록
+6. 유언 수정
+7. 자산 재등록
+8. 스마트 컨트랙트 수정
+9. 수정 기록 반영
+10. 재산 토큰화
+11. 토큰화 기록
+12. 생전 증여 실행
+13. 증여 기록
+14. 사망 확인 준비
+15. 사망 확인 기록
+16. 사후 절차 개시
+17. 유언 자동 열람
+18. 열람 기록
+19. 보험금 지급
+20. 보험금 지급 기록
+21. 상속 집행
+22. 최종 상속 기록
+
+즉, 이 데모는 "생전에 준비하는 단계"와 "사후에 자동으로 이어지는 단계"를 한 흐름으로 보여줍니다.
